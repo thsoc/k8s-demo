@@ -1,0 +1,49 @@
+apiVersion: apps/v1                    # 指定 Deployment 的 API 版本（稳定版）
+kind: Deployment                       # 资源类型：Deployment，用于管理 Pod 副本
+metadata:
+  name: myapp                          # Deployment 的名称
+spec:
+  replicas: 2                          # 期望运行 2 个 Pod 副本
+  selector:
+    matchLabels:
+      app: myapp                       # 选择器：管理带有 app=myapp 标签的 Pod。告诉 Deployment “哪些 Pod 归我管”
+  template:
+    metadata:
+      labels:
+        app: myapp                     # 为 Pod 模板设置标签 app=myapp，与选择器匹配。给 Deployment 即将创建的 Pod 打上标签，是 Pod 的实际标签
+    spec:
+      containers:
+        - name: myapp                  # 容器名称
+          image: myapp:1.0  # 使用的镜像
+          imagePullPolicy: IfNotPresent   # 或 Never
+          ports:
+            - containerPort: 8081      # 声明容器暴露的端口（仅供文档参考，实际映射由 Service 决定）
+---
+apiVersion: v1                         # Service 的 API 版本
+kind: Service                          # 资源类型：Service，提供稳定的网络入口（稳定的访问入口，负载均衡，服务发现，Pod 的“代理”或“负载均衡器”）
+metadata:
+  name: myapp                          # Service 的名称
+spec:
+  selector:
+    app: myapp                         # 将流量转发到标签 app=myapp 的 Pod
+  ports:
+    - port: 80                         # Service 在集群内部暴露的端口（其他服务可通过 myapp:80 访问）
+      targetPort: 8081                 # 将流量转发到 Pod 的 8080 端口（容器端口）
+---
+apiVersion: networking.k8s.io/v1       # Ingress 的 API 版本
+kind: Ingress                          # 资源类型：Ingress，提供外部 HTTP/HTTPS 路由
+metadata:
+  name: myapp                          # Ingress 的名称
+spec:
+  ingressClassName: nginx              # 指定使用 ingress-nginx 控制器处理此 Ingress
+  rules:
+    - host: myapp.local                # 匹配的域名（HTTP Host 头必须为此值）
+      http:
+        paths:
+          - path: /                    # 匹配所有路径
+            pathType: Prefix           # 前缀匹配模式（以 / 开头的路径都匹配）
+            backend:
+              service:
+                name: myapp            # 转发到的 Service 名称
+                port:
+                  number: 80           # 转发到 Service 的 80 端口

@@ -1,0 +1,10 @@
+server:
+  port: 8081
+  shutdown: graceful # 关闭应用时，等待所有请求完成再关闭。默认是immediate（立即关闭）
+
+
+spring:
+  application:
+    name: k8s-demo
+  lifecycle:
+    timeout-per-shutdown-phase: 30s # 关闭应用时，等待所有请求完成再关闭。默认是30s

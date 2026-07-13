@@ -1,0 +1,21 @@
+# 构建阶段
+FROM maven:3.9-eclipse-temurin-8 AS build
+WORKDIR /app
+
+# 复制整个项目（包括所有子模块）
+COPY pom.xml .
+COPY module-core ./module-core
+COPY module-web ./module-web
+
+# 执行构建（在父 POM 目录下，会编译所有子模块）
+RUN mvn clean package -DskipTests
+
+# 运行阶段
+FROM eclipse-temurin:8-jre
+WORKDIR /app
+
+# 假设最终可执行 jar 在 module-web 的 target 中
+COPY --from=build /app/module-web/target/*.jar app.jar
+
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
